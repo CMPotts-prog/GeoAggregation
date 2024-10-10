@@ -1,0 +1,59 @@
+import pandas as pd
+import re
+
+# Load your dataset (adjust the file path as necessary)
+file_path = 'data 123_20241009.csv'  # Example file path
+df = pd.read_csv(file_path)
+
+# Convert column names to a format that can be easily compared
+def extract_month_year_from_header(text):
+    match = re.search(r'([A-Za-z]+ \d{4})$', text)
+    return match.group(0) if match else text
+
+# Rename columns using the extraction function
+df.columns = [extract_month_year_from_header(col) for col in df.columns]
+
+# Clean up any leading/trailing spaces from column names
+df.columns = df.columns.str.strip()
+
+# Check for and remove any months with no data (already done)
+# Example: drop rows where all month columns are NaN
+df.dropna(axis=1, how='all', inplace=True)
+
+# Create a mapping to replace specific provinces with their aggregated names
+provinces_to_aggregate = {
+    'a': 'x',
+    'b': 'x',
+    'c': 'x',
+    'd': 'x',
+    'e': 'y',
+    'f': 'y',
+    'g': 'y',
+    'h': 'z',
+    'i': 'z'
+}
+
+# Update the 'organisationunitname' column for specified provinces
+df['organisationunitname'] = df['organisationunitname'].replace(provinces_to_aggregate)
+
+# Now group by 'organisationunitname' (which will now have "x" "y" or "z")
+# and sum the values for each month
+aggregated_data = df.groupby('organisationunitname').sum()
+
+# Reset the index to convert 'organisationunitname' back to a column
+aggregated_data.reset_index(inplace=True)
+
+# Display the aggregated data
+print(aggregated_data)
+
+# Specify the desired order for the regions
+desired_order = ['x', 'y', 'z']
+
+# Reindex the DataFrame to match the desired order
+aggregated_data = aggregated_data.set_index('organisationunitname').reindex(desired_order).reset_index()
+
+# Display the reordered DataFrame
+print(aggregated_data)
+
+#create csv file to archive
+aggregated_data.to_csv('AGG_15_20241009.csv')
